@@ -42,6 +42,15 @@ namespace BetterControls
             {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
         };
 
+        private readonly Dictionary<SButton, SButton> _titleKeyMap = new Dictionary<SButton, SButton>
+        {
+            {SButton.Left,  SButton.A},
+            {SButton.Right, SButton.D},
+            {SButton.Up,    SButton.W},
+            {SButton.Down,  SButton.S},
+            {SButton.Space, SButton.MouseLeft},
+            {SButton.Enter, SButton.MouseLeft},
+        };
 
         /*********
         ** Public methods
@@ -96,9 +105,14 @@ namespace BetterControls
             //bool isDown = (state == SButtonState.Pressed || state == SButtonState.Held);
             bool isDown = e.IsDown(e.Button);
 
-            // ignore if player hasn't loaded a save yet
+            // remap title menu bindings
             if (!Context.IsWorldReady)
-                return;
+            {
+                if (!_titleKeyMap.ContainsKey(e.Button))
+                    return;
+
+                RemapButton(e.Button, _titleKeyMap[e.Button], isDown);
+            }
 
             // remap overworld bindings
             if (_activeMenu == null)
@@ -111,6 +125,11 @@ namespace BetterControls
             {
                 if (_remapInMenu.ContainsKey(e.Button))
                     RemapButton(e.Button, _remapInMenu[e.Button], isDown);
+
+                if (e.Button.IsUseToolButton() && e.Button != SButton.MouseLeft)
+                    RemapButton(e.Button, SButton.MouseLeft, isDown);
+                else if (e.Button.IsActionButton() && e.Button != SButton.MouseRight)
+                    RemapButton(e.Button, SButton.MouseRight, isDown);
             }
 
             // print button presses to the console window
