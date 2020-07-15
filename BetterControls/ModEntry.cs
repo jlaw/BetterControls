@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
+using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Events;
+using xTile.Dimensions;
 using StardewValley.Menus;
 
 namespace BetterControls
@@ -10,6 +14,120 @@ namespace BetterControls
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
+        internal class ModHooksWrapper : ModHooks
+        {
+            private readonly ModHooks _existingHooks;
+            private static ModEntry _mod;
+
+            internal static ModHooksWrapper CreateWrapper(ModEntry mod)
+            {
+                _mod = mod;
+
+                try
+                {
+                    FieldInfo hooksField = _mod.Helper.Reflection.GetField<ModHooks>(typeof(Game1), "hooks").FieldInfo;
+                    ModHooksWrapper wrapper = new ModHooksWrapper((ModHooks)hooksField.GetValue(null));
+                    hooksField.SetValue(null, wrapper);
+                    _mod.Monitor.Log($"Successfully wrapped Game1.hooks!", LogLevel.Debug);
+                    return wrapper;
+                }
+                catch (Exception e)
+                {
+                    _mod.Monitor.Log($"Failed to wrap Game1.hooks: {e.Message}", LogLevel.Debug);
+                }
+
+                return null;
+            }
+
+            private ModHooksWrapper(ModHooks existingHooks)
+            {
+                _existingHooks = existingHooks;
+            }
+
+            public override void OnGame1_PerformTenMinuteClockUpdate(Action action)
+            {
+                this._existingHooks.OnGame1_PerformTenMinuteClockUpdate(action);
+            }
+
+            public override void OnGame1_NewDayAfterFade(Action action)
+            {
+                this._existingHooks.OnGame1_NewDayAfterFade(action);
+            }
+
+            public override void OnGame1_ShowEndOfNightStuff(Action action)
+            {
+                this._existingHooks.OnGame1_ShowEndOfNightStuff(action);
+            }
+
+            public override void OnGame1_UpdateControlInput(ref KeyboardState keyboardState, ref MouseState mouseState, ref GamePadState gamePadState, Action action)
+            {
+                _mod.Monitor.Log($"Original gamepad state: {gamePadState.Buttons.ToString()}.", LogLevel.Debug);
+                _mod.Monitor.Log($"Original gamepad state: {gamePadState.GetHashCode().ToString("X")}.", LogLevel.Debug);
+
+                // get the state of all buttons
+                Buttons origButtons = (Buttons) (gamePadState.Buttons.GetHashCode() | gamePadState.DPad.GetHashCode());
+                _mod.Monitor.Log($"Original button hash: {origButtons.ToString("X")}", LogLevel.Debug);
+
+                // remap buttons according to dictionary
+                Buttons newButtons = 0;
+                foreach (var buttonMap in _remapGamePad)
+                    newButtons |= ((origButtons & buttonMap.Key) == buttonMap.Key) ? buttonMap.Value : 0;
+                _mod.Monitor.Log($"New button hash: {newButtons.ToString("X")}", LogLevel.Debug);
+
+                // set new button states
+                GamePadButtons newGamePadButtons = new GamePadButtons(newButtons);
+
+                // set new DPad states
+                ButtonState newDPadUpState    = (newButtons & Buttons.DPadUp)    == Buttons.DPadUp    ? ButtonState.Pressed : ButtonState.Released;
+                ButtonState newDPadDownState  = (newButtons & Buttons.DPadDown)  == Buttons.DPadDown  ? ButtonState.Pressed : ButtonState.Released;
+                ButtonState newDPadLeftState  = (newButtons & Buttons.DPadLeft)  == Buttons.DPadLeft  ? ButtonState.Pressed : ButtonState.Released;
+                ButtonState newDPadRightState = (newButtons & Buttons.DPadRight) == Buttons.DPadRight ? ButtonState.Pressed : ButtonState.Released;
+                GamePadDPad newGamePadDPad = new GamePadDPad(newDPadUpState, newDPadDownState, newDPadLeftState, newDPadRightState);
+
+                // pass new states to existing hooks
+                gamePadState = new GamePadState(gamePadState.ThumbSticks, gamePadState.Triggers, newGamePadButtons, newGamePadDPad);
+                //_mod.Monitor.Log($"New gamepad state: {gamePadState.ToString()}.", LogLevel.Debug);
+                _mod.Monitor.Log($"New button state: {gamePadState.GetHashCode().ToString("X")}", LogLevel.Debug);
+                this._existingHooks.OnGame1_UpdateControlInput(ref keyboardState, ref mouseState, ref gamePadState, action);
+            }
+
+            public override void OnGameLocation_ResetForPlayerEntry(GameLocation location, Action action)
+            {
+                this._existingHooks.OnGameLocation_ResetForPlayerEntry(location, action);
+            }
+
+            public override bool OnGameLocation_CheckAction(GameLocation location, Location tileLocation, Rectangle viewport, Farmer who, Func<bool> action)
+            {
+                return this._existingHooks.OnGameLocation_CheckAction(location, tileLocation, viewport, who, action);
+            }
+
+            public override FarmEvent OnUtility_PickFarmEvent(Func<FarmEvent> action)
+            {
+                return this._existingHooks.OnUtility_PickFarmEvent(action);
+            }
+
+            private readonly Dictionary<Buttons, Buttons> _remapGamePad = new Dictionary<Buttons, Buttons>
+            {
+                {Buttons.DPadUp,        Buttons.DPadDown},
+                {Buttons.DPadDown,      Buttons.DPadUp},
+                {Buttons.DPadLeft,      Buttons.DPadRight},
+                {Buttons.DPadRight,     Buttons.DPadLeft},
+                {Buttons.A,             Buttons.X},
+                {Buttons.B,             Buttons.B},
+                {Buttons.X,             Buttons.A},
+                {Buttons.Y,             Buttons.Y},
+                {Buttons.Start,         Buttons.Start},
+                {Buttons.Back,          Buttons.Back},
+                {Buttons.BigButton,     Buttons.BigButton},
+                {Buttons.LeftStick,     Buttons.LeftStick},
+                {Buttons.RightStick,    Buttons.RightStick},
+                {Buttons.LeftShoulder,  Buttons.LeftShoulder},
+                {Buttons.RightShoulder, Buttons.RightShoulder},
+                {Buttons.LeftTrigger,   Buttons.LeftTrigger},
+                {Buttons.RightTrigger,  Buttons.RightTrigger},
+            }; 
+        }
+
         private object _inputState;
         private MethodInfo _overrideButtonMethod;
         private IClickableMenu _activeMenu;
@@ -50,14 +168,16 @@ namespace BetterControls
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
-            // get SMAPI's input handler
-            _inputState = helper.Input.GetType().GetField("InputState", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(helper.Input);
+            ModHooksWrapper.CreateWrapper(this);
 
-            // get OverrideButton method
-            _overrideButtonMethod = _inputState?.GetType().GetMethod("OverrideButton");
+            //// get SMAPI's input handler
+            //_inputState = helper.Input.GetType().GetField("InputState", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(helper.Input);
 
-            helper.Events.Display.MenuChanged += this.OnEnterMenu;
-            helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+            //// get OverrideButton method
+            //_overrideButtonMethod = _inputState?.GetType().GetMethod("OverrideButton");
+
+            //helper.Events.Display.MenuChanged += this.OnEnterMenu;
+            //helper.Events.Input.ButtonPressed += this.OnButtonPressed;
         }
 
 
