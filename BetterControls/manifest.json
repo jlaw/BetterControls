@@ -1,0 +1,10 @@
+{
+  "Name": "Better Controls",
+  "Author": "pseudoku",
+  "Version": "0.1.0-alpha.1",
+  "Description": "Enhances configuration of keyboard and gamepad controls.",
+  "UniqueID": "pseudoku.BetterControls",
+  "EntryDll": "BetterControls.dll",
+  "MinimumApiVersion": "3.1.0",
+  "UpdateKeys": []
+}
