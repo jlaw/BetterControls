@@ -10,46 +10,32 @@ namespace BetterControls
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
-        private readonly Dictionary<Tuple<Type, Type>, KeyMap> _remapOverworld = new Dictionary<Tuple<Type, Type>, KeyMap>
+        private readonly KeyMap _remapOverworld = new KeyMap
         {
-            {
-                Tuple.Create(typeof(GamePadState), typeof(GamePadState)),
-                new KeyMap
-                {
-                    { nameof(GamePadState.Buttons.B), nameof(GamePadState.Buttons.A) },
-                }
-            },
-            //{SButton.DPadUp,          SButton.B},               //     ChestAnywhere
-            //{SButton.DPadLeft,        SButton.None},
-            //{SButton.DPadDown,        SButton.Tab},             //     Shift Toolbar
-            //{SButton.DPadRight,       SButton.K},               //     GeodeInfo
+            {SButton.DPadUp,          SButton.B},               //     ChestAnywhere
+            {SButton.DPadLeft,        SButton.None},
+            {SButton.DPadDown,        SButton.Tab},             //     Shift Toolbar
+            {SButton.DPadRight,       SButton.K},               //     GeodeInfo
             //{SButton.ControllerA,     SButton.ControllerA},   // Default: Check/Do Action
             //{SButton.ControllerB,     SButton.ControllerB},   // Default: Inventory
             //{SButton.ControllerX,     SButton.ControllerX},   // Default: Use Tool
             //{SButton.ControllerY,     SButton.ControllerY},   // Default: Crafting
-            //{SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Left Tool (Default: Shift Toolbar)
-            //{SButton.RightShoulder,   SButton.RightTrigger},    //     Select Right Tool (Default: Shift Toolbar)
+            {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Left Tool (Default: Shift Toolbar)
+            {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Right Tool (Default: Shift Toolbar)
             //{SButton.LeftTrigger,     SButton.LeftTrigger},   // Default: Select Left Tool
             //{SButton.RightTrigger,    SButton.C},             //     Use Tool (Default: Select Right Tool)
             //{SButton.ControllerBack,  SButton.ControllerBack},// Default: Journal
-            //{SButton.ControllerStart, SButton.N},               //     Pause/TimeSpeed (Default: Menu)
-            //{SButton.LeftStick,       SButton.M},               //     Map (Default: nothing)
-            //{SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
+            {SButton.ControllerStart, SButton.N},               //     Pause/TimeSpeed (Default: Menu)
+            {SButton.LeftStick,       SButton.M},               //     Map (Default: nothing)
+            {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
         };
 
-        private readonly Dictionary<Tuple<Type, Type>, KeyMap> _remapInMenu = new Dictionary<Tuple<Type, Type>, KeyMap>
+        private readonly KeyMap _remapInMenu = new KeyMap
         {
-            {
-                Tuple.Create(typeof(GamePadState), typeof(GamePadState)),
-                new KeyMap
-                {
-                    { nameof(GamePadState.Buttons.B), nameof(GamePadState.Buttons.A) },
-                }
-            },
-            //{SButton.ControllerY,     SButton.Q},               //     OrganizeShortcut: StackToChest
-            //{SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
-            //{SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab
-            //{SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
+            {SButton.ControllerY,     SButton.Q},               //     OrganizeShortcut: StackToChest
+            {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
+            {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab
+            {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
         };
 
 
@@ -68,6 +54,7 @@ namespace BetterControls
 
             InputPatch.SetMap(_remapOverworld);
             helper.Events.Display.MenuChanged += this.OnEnterMenu;
+            helper.Events.Input.ButtonPressed += this.OnButtonPressed;
         }
 
         /// <summary>Raised after the player opens a menu.</summary>
@@ -75,7 +62,15 @@ namespace BetterControls
         /// <param name="e">The event data.</param>
         private void OnEnterMenu(object sender, MenuChangedEventArgs e)
         {
-            InputPatch.SetMap(_remapInMenu);
+            if (e.NewMenu == null)
+                InputPatch.SetMap(_remapOverworld);
+            else
+                InputPatch.SetMap(_remapInMenu);
+        }
+
+        private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
+        {
+            Monitor.Log($"Button Pressed: {e.Button}", LogLevel.Debug);
         }
     }
 }

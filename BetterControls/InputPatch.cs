@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Harmony;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
+using StardewValley.Menus;
 
 namespace BetterControls
 {
     public class InputPatch
     {
         private static IMonitor Monitor;
-        private static Dictionary<Tuple<Type, Type>, KeyMap> map;
-        // private static Dictionary<Type, string> pressed;
+        private static KeyMap map;
+        private static GamePadState curGamePadState;
+        private static KeyboardState curKeyboardState;
+        private static MouseState curMouseState;
 
         // call this method from your Entry class
         public static bool Initialize(string id, IMonitor monitor)
@@ -55,14 +59,19 @@ namespace BetterControls
             return true;
         }
 
-        public static void SetMap(Dictionary<Tuple<Type, Type>, KeyMap> map)
+        public static void SetMap(KeyMap map)
         {
             InputPatch.map = map;
         }
 
-        public static void Keyboard_GetState_Postfix(KeyboardState __result)
+        public static KeyboardState Keyboard_GetState_Postfix(KeyboardState __result)
         {
-
+            if (__result.GetPressedKeys().Any())
+            {
+                curKeyboardState = __result;
+                return __result;
+            }
+            return curKeyboardState;
         }
 
         public static void Mouse_GetState_Postfix(MouseState __result)
@@ -72,40 +81,45 @@ namespace BetterControls
 
         public static GamePadState GamePad_GetState_Postfix(GamePadState __result)
         {
+            Buttons oldButton;
+            List<Keys> newKeys = new List<Keys>();
+            
+            // get the internal field `buttons`
             FieldInfo fieldinfo = AccessTools.Field(typeof(GamePadButtons), "buttons");
             Buttons origButtons = (Buttons)fieldinfo.GetValue(__result.Buttons);
+
             Buttons newButtons = origButtons;
+            Monitor.Log($"origButtons: {origButtons}",LogLevel.Debug);
 
-            // Just handle gamepad -> gamepad mappings for now
-            var key = Tuple.Create(typeof(GamePadState), typeof(GamePadState));
-            if (!map.ContainsKey(key))
+            // this currently sets to = from is set, but it should actually be mirroring
+            // to -> from and unsetting to (making sure not to trash any keys that have already been rebound)
+            // ex: a -> b and b -> a
+            foreach (var entry in map)
             {
-                return __result;
-            }
-            foreach (var entry in map[key])
-            {
-                var fromFI = AccessTools.Field(typeof(Buttons), entry.Key);
-                var toFI = AccessTools.Field(typeof(Buttons), entry.Value);
-                var from = (Buttons) fromFI.GetRawConstantValue();
-                var to = (Buttons) toFI.GetRawConstantValue();
-
-                // this currently sets to = from is set, but it should actually be mirroring
-                // to -> from and unsetting to (making sure not to trash any keys that have already been rebound)
-                // ex: a -> b and b -> a
-                if ((newButtons & from) == from) {
-                    newButtons &= ~from;
-                    newButtons |= to;
+                if (entry.Key.TryGetController(out oldButton) && entry.Value.TryGetController(out var newButton))
+                {
+                    newButtons &= ((origButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
+                    newButtons |= ((origButtons & oldButton) == oldButton) ? newButton : 0;
+                }
+                if (entry.Key.TryGetController(out oldButton) && entry.Value.TryGetKeyboard(out var newKey))
+                {
+                    newButtons &= ((origButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
+                    newKeys.Add((origButtons & oldButton) == oldButton ? newKey : 0);
                 }
             }
+            Monitor.Log($"newButtons: {newButtons}",LogLevel.Debug);
 
-            return new GamePadState(
+            curKeyboardState = new KeyboardState(newKeys.ToArray());
+            
+            curGamePadState = new GamePadState(
                 __result.ThumbSticks,
                 __result.Triggers,
                 new GamePadButtons(newButtons),
                 __result.DPad
             );
+            return curGamePadState;
         }
     }
 
-    public class KeyMap : Dictionary<string, string> { }
+    public class KeyMap : Dictionary<SButton, SButton> { }
 }
