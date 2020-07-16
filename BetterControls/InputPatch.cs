@@ -90,7 +90,7 @@ namespace BetterControls
                 // to -> from and unsetting to (making sure not to trash any keys that have already been rebound)
                 // ex: a -> b and b -> a
                 if ((newButtons & from) == from) {
-                    newButtons ^= ~from;
+                    newButtons &= ~from;
                     newButtons |= to;
                 }
             }

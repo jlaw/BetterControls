@@ -64,6 +64,7 @@ namespace BetterControls
                 return;
             }
 
+            InputPatch.SetMap(_remapOverworld);
             helper.Events.Display.MenuChanged += this.OnEnterMenu;
         }
 
