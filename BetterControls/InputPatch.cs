@@ -77,8 +77,12 @@ namespace BetterControls
             Buttons newButtons = origButtons;
 
             // Just handle gamepad -> gamepad mappings for now
-            KeyMap keymap = map[Tuple.Create(typeof(GamePadState), typeof(GamePadState))];
-            foreach (var entry in keymap)
+            var key = Tuple.Create(typeof(GamePadState), typeof(GamePadState));
+            if (!map.ContainsKey(key))
+            {
+                return __result;
+            }
+            foreach (var entry in map[key])
             {
                 var fromFI = AccessTools.Field(typeof(Buttons), entry.Key);
                 var toFI = AccessTools.Field(typeof(Buttons), entry.Value);
