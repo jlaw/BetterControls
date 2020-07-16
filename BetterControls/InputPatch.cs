@@ -11,8 +11,8 @@ namespace BetterControls
     public class InputPatch
     {
         private static IMonitor Monitor;
-        private static Dictionary<(Type, Type), KeyMap> map;
-        private static Dictionary<Type, string> pressed;
+        private static Dictionary<Tuple<Type, Type>, KeyMap> map;
+        // private static Dictionary<Type, string> pressed;
 
         // call this method from your Entry class
         public static bool Initialize(string id, IMonitor monitor)
@@ -27,7 +27,6 @@ namespace BetterControls
 
             foreach (var method in methods)
             {
-                monitor.Log($"{method}", LogLevel.Debug);
                 var info = harmony.GetPatchInfo(method);
                 if (info == null)
                 {
@@ -42,21 +41,21 @@ namespace BetterControls
 
             harmony.Patch(
                original: keyboardGetStateMethod,
-               prefix: new HarmonyMethod(typeof(InputPatch), nameof(InputPatch.Keyboard_GetState_Postfix))
+               postfix: new HarmonyMethod(typeof(InputPatch), nameof(InputPatch.Keyboard_GetState_Postfix))
             );
             harmony.Patch(
                original: mouseGetStateMethod,
-               prefix: new HarmonyMethod(typeof(InputPatch), nameof(InputPatch.Mouse_GetState_Postfix))
+               postfix: new HarmonyMethod(typeof(InputPatch), nameof(InputPatch.Mouse_GetState_Postfix))
             );
             harmony.Patch(
                original: gamepadGetStateMethod,
-               prefix: new HarmonyMethod(typeof(InputPatch), nameof(InputPatch.GamePad_GetState_Postfix))
+               postfix: new HarmonyMethod(typeof(InputPatch), nameof(InputPatch.GamePad_GetState_Postfix))
             );
                 
             return true;
         }
 
-        public static void SetMap(Dictionary<(Type, Type), KeyMap> map)
+        public static void SetMap(Dictionary<Tuple<Type, Type>, KeyMap> map)
         {
             InputPatch.map = map;
         }
@@ -78,7 +77,7 @@ namespace BetterControls
             Buttons newButtons = origButtons;
 
             // Just handle gamepad -> gamepad mappings for now
-            KeyMap keymap = map[(typeof(GamePadState), typeof(GamePadState))];
+            KeyMap keymap = map[Tuple.Create(typeof(GamePadState), typeof(GamePadState))];
             foreach (var entry in keymap)
             {
                 var fromFI = AccessTools.Field(typeof(Buttons), entry.Key);

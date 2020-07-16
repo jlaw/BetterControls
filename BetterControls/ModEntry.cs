@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
-using Harmony;
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using StardewValley;
 using StardewValley.Menus;
 
 namespace BetterControls
@@ -13,12 +10,10 @@ namespace BetterControls
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
-        private IClickableMenu _activeMenu;
-
-        private readonly Dictionary<(Type, Type), KeyMap> _remapOverworld = new Dictionary<(Type, Type), KeyMap>
+        private readonly Dictionary<Tuple<Type, Type>, KeyMap> _remapOverworld = new Dictionary<Tuple<Type, Type>, KeyMap>
         {
             {
-                (typeof(GamePadState), typeof(GamePadState)),
+                Tuple.Create(typeof(GamePadState), typeof(GamePadState)),
                 new KeyMap
                 {
                     { nameof(GamePadState.Buttons.B), nameof(GamePadState.Buttons.A) },
@@ -42,7 +37,7 @@ namespace BetterControls
             //{SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
         };
 
-        private readonly Dictionary<(Type, Type), KeyMap> _remapInMenu = new Dictionary<(Type, Type), KeyMap>
+        private readonly Dictionary<Tuple<Type, Type>, KeyMap> _remapInMenu = new Dictionary<Tuple<Type, Type>, KeyMap>
         {
             //{SButton.ControllerY,     SButton.Q},               //     OrganizeShortcut: StackToChest
             //{SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
