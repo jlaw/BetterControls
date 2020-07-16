@@ -39,6 +39,13 @@ namespace BetterControls
 
         private readonly Dictionary<Tuple<Type, Type>, KeyMap> _remapInMenu = new Dictionary<Tuple<Type, Type>, KeyMap>
         {
+            {
+                Tuple.Create(typeof(GamePadState), typeof(GamePadState)),
+                new KeyMap
+                {
+                    { nameof(GamePadState.Buttons.B), nameof(GamePadState.Buttons.A) },
+                }
+            },
             //{SButton.ControllerY,     SButton.Q},               //     OrganizeShortcut: StackToChest
             //{SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
             //{SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab

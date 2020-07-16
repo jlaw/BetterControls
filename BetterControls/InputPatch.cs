@@ -87,7 +87,7 @@ namespace BetterControls
                 var fromFI = AccessTools.Field(typeof(Buttons), entry.Key);
                 var toFI = AccessTools.Field(typeof(Buttons), entry.Value);
                 var from = (Buttons) fromFI.GetRawConstantValue();
-                var to = (Buttons) fromFI.GetRawConstantValue();
+                var to = (Buttons) toFI.GetRawConstantValue();
 
                 // this currently sets to = from is set, but it should actually be mirroring
                 // to -> from and unsetting to (making sure not to trash any keys that have already been rebound)
