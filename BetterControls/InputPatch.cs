@@ -79,6 +79,13 @@ namespace BetterControls
 
         public static GamePadState GamePad_GetState_Postfix(GamePadState __result)
         {
+            // skip remap if nothing changed
+            if (_prevGamePadState == __result)
+            {
+                _pendingKeyState = new KeyboardState();
+                return __result;
+            }
+            
             // get a copy of current button states (Buttons, ThumbSticks, DPad)
             Buttons curButtons = (Buttons)GetVirtualButtonMethod.Invoke(__result, new object[] {});
 
