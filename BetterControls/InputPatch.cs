@@ -12,8 +12,10 @@ namespace BetterControls
     {
         private static IMonitor Monitor;
         private static KeyMap _map;
+        private static KeyboardState _prevKeyboardState;
         private static GamePadState _prevGamePadState;
         private static KeyboardState _pendingKeyState;
+        private static GamePadState _pendingButtonState;
         //private static MouseState curMouseState;
         private static readonly MethodInfo GetVirtualButtonMethod = AccessTools.Method(typeof(GamePadState), "GetVirtualButtons");
 
@@ -21,6 +23,8 @@ namespace BetterControls
         public static bool Initialize(string id, IMonitor monitor)
         {
             Monitor = monitor;
+            _pendingButtonState = new GamePadState();
+            _pendingKeyState = new KeyboardState();
             var harmony = HarmonyInstance.Create(id);
 
             var keyboardGetStateMethod = AccessTools.Method(typeof(Keyboard), nameof(Keyboard.GetState));
@@ -65,12 +69,66 @@ namespace BetterControls
 
         public static KeyboardState Keyboard_GetState_Postfix(KeyboardState __result)
         {
-            //List<Keys> keys = new List<Keys>();
-            //keys.AddRange(curKeyboardState.GetPressedKeys());
-            //keys.AddRange(__result.GetPressedKeys());
-            //return new KeyboardState(keys.Distinct().ToArray());
-            //return (__result.GetPressedKeys().Any()) ? __result : curKeyboardState;
-            return _pendingKeyState.GetPressedKeys().Any() ? _pendingKeyState : __result;
+            // process pending keys
+            if (_pendingKeyState.GetPressedKeys().Any())
+            {
+                Monitor.Log($"Pending keys exist {_pendingKeyState.GetPressedKeys()}", LogLevel.Debug);
+                _prevKeyboardState = _pendingKeyState;
+                _pendingKeyState = new KeyboardState();
+                return _prevKeyboardState;
+            }
+            
+            // skip remap if nothing is pressed
+            if (!__result.GetPressedKeys().Any())
+            {
+                _pendingButtonState = new GamePadState();
+                _prevKeyboardState = new KeyboardState();
+                return _prevKeyboardState;
+            }
+            
+            List<Keys> curKeys = new List<Keys>();
+            curKeys.AddRange(__result.GetPressedKeys());
+            List<Keys> noremapKeys = new List<Keys>();
+            noremapKeys.AddRange(curKeys.ToArray());
+
+            List<Keys> newKeys = new List<Keys>();
+            Buttons newButtons = 0;
+            
+            foreach (var key in curKeys)
+            {
+                foreach (var entry in _map)
+                {
+                    if (entry.Key == key.ToSButton())
+                    {
+                        noremapKeys.Remove(key);
+                        
+                        if (entry.Value.TryGetKeyboard(out var toKey))
+                            newKeys.Add(toKey);
+                        else if (entry.Value.TryGetController(out var toButton))
+                            newButtons |= toButton;
+                        else
+                            Monitor.Log($"No such key: {entry.Value}");
+                        break;
+                    }
+                }
+            }
+            
+            // update DPad states if they were remapped
+            var newDPadUp    = (newButtons & Buttons.DPadUp)    == Buttons.DPadUp    ? ButtonState.Pressed : ButtonState.Released;
+            var newDPadDown  = (newButtons & Buttons.DPadDown)  == Buttons.DPadDown  ? ButtonState.Pressed : ButtonState.Released;
+            var newDPadLeft  = (newButtons & Buttons.DPadLeft)  == Buttons.DPadLeft  ? ButtonState.Pressed : ButtonState.Released;
+            var newDPadRight = (newButtons & Buttons.DPadRight) == Buttons.DPadRight ? ButtonState.Pressed : ButtonState.Released;
+            
+            _pendingButtonState = new GamePadState(
+                new GamePadThumbSticks(),
+                new GamePadTriggers(),
+                new GamePadButtons(newButtons),
+                new GamePadDPad(newDPadUp, newDPadDown, newDPadLeft, newDPadRight)
+            );
+            
+             newKeys.AddRange(noremapKeys.ToArray());
+            _prevKeyboardState = new KeyboardState(newKeys.Distinct().ToArray());
+            return _prevKeyboardState;
         }
 
         public static void Mouse_GetState_Postfix(MouseState __result)
@@ -79,11 +137,20 @@ namespace BetterControls
 
         public static GamePadState GamePad_GetState_Postfix(GamePadState __result)
         {
+            Buttons pendingButtons = (Buttons)GetVirtualButtonMethod.Invoke(_pendingButtonState, new object[] {});
+            if (pendingButtons != 0)
+            {
+                Monitor.Log($"Pending buttons exist {_pendingButtonState.Buttons}", LogLevel.Debug);
+                _prevGamePadState = _pendingButtonState;
+                _pendingButtonState = new GamePadState();
+                return _prevGamePadState;
+            }
+            
             // skip remap if nothing changed
             if (_prevGamePadState == __result)
             {
                 _pendingKeyState = new KeyboardState();
-                return __result;
+                return _prevGamePadState;
             }
             
             // get a copy of current button states (Buttons, ThumbSticks, DPad)

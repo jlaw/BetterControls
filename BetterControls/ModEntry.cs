@@ -49,6 +49,12 @@ namespace BetterControls
         {
             {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
             {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab
+            {SButton.W,               SButton.DPadUp},          //     Up
+            {SButton.S,               SButton.DPadDown},        //     Down
+            {SButton.A,               SButton.DPadLeft},        //     Left
+            {SButton.D,               SButton.DPadRight},       //     Right
+            {SButton.Space,           SButton.ControllerA},     //     Select
+            {SButton.Enter,           SButton.ControllerA},     //     Select
         };
 
 
