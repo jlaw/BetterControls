@@ -16,9 +16,9 @@ namespace BetterControls
             {SButton.DPadLeft,        SButton.None},
             {SButton.DPadDown,        SButton.Tab},             //     Shift Toolbar
             {SButton.DPadRight,       SButton.K},               //     GeodeInfo
-            //{SButton.ControllerA,     SButton.ControllerA},   // Default: Check/Do Action
+            //{SButton.ControllerA,     SButton.ControllerX},   // Default: Check/Do Action
             //{SButton.ControllerB,     SButton.ControllerB},   // Default: Inventory
-            //{SButton.ControllerX,     SButton.ControllerX},   // Default: Use Tool
+            //{SButton.ControllerX,     SButton.ControllerA},   // Default: Use Tool
             //{SButton.ControllerY,     SButton.ControllerY},   // Default: Crafting
             {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Left Tool (Default: Shift Toolbar)
             {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Right Tool (Default: Shift Toolbar)

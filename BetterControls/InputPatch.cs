@@ -89,21 +89,20 @@ namespace BetterControls
             Buttons newButtons = curButtons;
             List<Keys> newKeys = new List<Keys>();
 
-            // this currently sets to = from is set, but it should actually be mirroring
-            // to -> from and unsetting to (making sure not to trash any keys that have already been rebound)
-            // ex: a -> b and b -> a
-            foreach (var entry in map)
+            // go through each mapping and process
+            //   clearing button state only if button was originally pressed
+            foreach (var entry in _map)
             {
                 Buttons fromButton;
-                if (entry.Key.TryGetController(out oldButton) && entry.Value.TryGetController(out var newButton))
+                if (entry.Key.TryGetController(out fromButton) && entry.Value.TryGetController(out var toButton))
                 {
-                    newButtons &= ((curButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
-                    newButtons |= ((curButtons & oldButton) == oldButton) ? newButton : 0;
+                    newButtons &= ((newButtons & curButtons & fromButton) == fromButton) ? ~fromButton : newButtons;
+                    newButtons |= ((curButtons & fromButton) == fromButton) ? toButton : newButtons;
                 }
-                if (entry.Key.TryGetController(out oldButton) && entry.Value.TryGetKeyboard(out var newKey))
+                else if (entry.Key.TryGetController(out fromButton) && entry.Value.TryGetKeyboard(out var newKey))
                 {
-                    newButtons &= ((curButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
-                    if ((curButtons & oldButton) == oldButton)
+                    newButtons &= ((newButtons & curButtons & fromButton) == fromButton) ? ~fromButton : newButtons;
+                    if ((curButtons & fromButton) == fromButton)
                         newKeys.Add(newKey);
                 }
             }
