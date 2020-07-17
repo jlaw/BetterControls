@@ -10,7 +10,7 @@ namespace BetterControls
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
-        private readonly KeyMap _remapOverworld = new KeyMap
+        private readonly KeyMap _mapOverworld = new KeyMap
         {
             {SButton.DPadUp,          SButton.B},               //     ChestAnywhere
             {SButton.DPadLeft,        SButton.None},
@@ -30,12 +30,28 @@ namespace BetterControls
             {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
         };
 
-        private readonly KeyMap _remapInMenu = new KeyMap
+        // keymap for main menu
+        private readonly KeyMap _mapGameMenu = new KeyMap
         {
-            {SButton.ControllerY,     SButton.Q},               //     OrganizeShortcut: StackToChest
             {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
             {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab
             {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
+        };
+
+        // keymap for chests
+        private readonly KeyMap _mapItemGrabMenu = new KeyMap
+        {
+            {SButton.LeftTrigger,    SButton.LeftShoulder},     //     ChestAnywhere: Select Previous Tab
+            {SButton.RightTrigger,   SButton.RightShoulder},    //     ChestAnywhere: Select Next Tab
+            {SButton.ControllerY,     SButton.Q},               //     OrganizeShortcut: StackToChest
+            {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
+        };
+        
+        // keymap for title menu
+        private readonly KeyMap _mapTitleMenu = new KeyMap
+        {
+            {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
+            {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab
         };
 
 
@@ -52,7 +68,7 @@ namespace BetterControls
                 return;
             }
 
-            InputPatch.SetMap(_remapOverworld);
+            InputPatch.SetMap(_mapTitleMenu);
             helper.Events.Display.MenuChanged += this.OnEnterMenu;
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
         }
@@ -62,10 +78,26 @@ namespace BetterControls
         /// <param name="e">The event data.</param>
         private void OnEnterMenu(object sender, MenuChangedEventArgs e)
         {
-            if (e.NewMenu == null)
-                InputPatch.SetMap(_remapOverworld);
-            else
-                InputPatch.SetMap(_remapInMenu);
+            Monitor.Log($"OldMenu: {e.OldMenu} NewMenu: {e.NewMenu}", LogLevel.Debug);
+
+            switch (e.NewMenu)
+            {
+                case null:
+                    InputPatch.SetMap(_mapOverworld);
+                    break;
+                case GameMenu _:
+                    InputPatch.SetMap(_mapGameMenu);
+                    break;
+                case ItemGrabMenu _:
+                    InputPatch.SetMap(_mapItemGrabMenu);
+                    break;
+                case TitleMenu _:
+                    InputPatch.SetMap(_mapTitleMenu);
+                    break;
+                default:
+                    InputPatch.SetMap(new KeyMap());
+                    break;
+            }
         }
 
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
