@@ -1,22 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Harmony;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
-using StardewValley.Menus;
 
 namespace BetterControls
 {
     public class InputPatch
     {
         private static IMonitor Monitor;
-        private static KeyMap map;
+        private static KeyMap _map;
         private static GamePadState curGamePadState;
         private static KeyboardState curKeyboardState;
-        private static MouseState curMouseState;
+        //private static MouseState curMouseState;
 
         // call this method from your Entry class
         public static bool Initialize(string id, IMonitor monitor)
@@ -25,8 +23,8 @@ namespace BetterControls
             var harmony = HarmonyInstance.Create(id);
 
             var keyboardGetStateMethod = AccessTools.Method(typeof(Keyboard), nameof(Keyboard.GetState));
-            var mouseGetStateMethod = AccessTools.Method(typeof(Mouse), nameof(Mouse.GetState), new Type[] { typeof(GameWindow) });
-            var gamepadGetStateMethod = AccessTools.Method(typeof(GamePad), nameof(GamePad.GetState), new Type[] { typeof(int), typeof(GamePadDeadZone) });
+            var mouseGetStateMethod = AccessTools.Method(typeof(Mouse), nameof(Mouse.GetState), new[] { typeof(GameWindow) });
+            var gamepadGetStateMethod = AccessTools.Method(typeof(GamePad), nameof(GamePad.GetState), new[] { typeof(int), typeof(GamePadDeadZone) });
             MethodInfo[] methods = { keyboardGetStateMethod, mouseGetStateMethod, gamepadGetStateMethod };
 
             foreach (var method in methods)
@@ -38,7 +36,7 @@ namespace BetterControls
                 }
                 foreach (var patch in info.Postfixes)
                 {
-                    Monitor.Log($"{info.ToString()} is already patched by {patch.owner}");
+                    Monitor.Log($"{info} is already patched by {patch.owner}");
                     return false;
                 }
             }
@@ -55,28 +53,26 @@ namespace BetterControls
                original: gamepadGetStateMethod,
                postfix: new HarmonyMethod(typeof(InputPatch), nameof(InputPatch.GamePad_GetState_Postfix))
             );
-                
+
             return true;
         }
 
         public static void SetMap(KeyMap map)
         {
-            InputPatch.map = map;
+            InputPatch._map = map;
         }
 
         public static KeyboardState Keyboard_GetState_Postfix(KeyboardState __result)
         {
-            if (__result.GetPressedKeys().Any())
-            {
-                curKeyboardState = __result;
-                return __result;
-            }
-            return curKeyboardState;
+            //List<Keys> keys = new List<Keys>();
+            //keys.AddRange(curKeyboardState.GetPressedKeys());
+            //keys.AddRange(__result.GetPressedKeys());
+            //return new KeyboardState(keys.Distinct().ToArray());
+            return (__result.GetPressedKeys().Any()) ? __result : curKeyboardState;
         }
 
         public static void Mouse_GetState_Postfix(MouseState __result)
         {
-
         }
 
         public static GamePadState GamePad_GetState_Postfix(GamePadState __result)
@@ -107,8 +103,9 @@ namespace BetterControls
                 }
             }
 
+            // save key mappings to be processed Keyboard_GetState_Postfix
             curKeyboardState = new KeyboardState(newKeys.ToArray());
-            
+
             curGamePadState = new GamePadState(
                 __result.ThumbSticks,
                 __result.Triggers,
