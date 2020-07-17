@@ -71,6 +71,7 @@ namespace BetterControls
             InputPatch.SetMap(_mapTitleMenu);
             helper.Events.Display.MenuChanged += this.OnEnterMenu;
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+            helper.Events.Input.ButtonReleased += this.OnButtonReleased;
         }
 
         /// <summary>Raised after the player opens a menu.</summary>
@@ -103,6 +104,11 @@ namespace BetterControls
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
             Monitor.Log($"Button Pressed: {e.Button}", LogLevel.Debug);
+        }
+        
+        private void OnButtonReleased(object sender, ButtonReleasedEventArgs e)
+        {
+            Monitor.Log($"Button Released: {e.Button}", LogLevel.Debug);
         }
     }
 }
