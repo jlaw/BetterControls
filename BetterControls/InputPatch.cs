@@ -15,6 +15,7 @@ namespace BetterControls
         private static GamePadState _prevGamePadState;
         private static KeyboardState _pendingKeyState;
         //private static MouseState curMouseState;
+        private static readonly MethodInfo GetVirtualButtonMethod = AccessTools.Method(typeof(GamePadState), "GetVirtualButtons");
 
         // call this method from your Entry class
         public static bool Initialize(string id, IMonitor monitor)
@@ -79,8 +80,7 @@ namespace BetterControls
         public static GamePadState GamePad_GetState_Postfix(GamePadState __result)
         {
             // get a copy of current button states (Buttons, ThumbSticks, DPad)
-            MethodInfo virtualButtonMethod = AccessTools.Method(typeof(GamePadState), "GetVirtualButtons");
-            Buttons curButtons = (Buttons)virtualButtonMethod.Invoke(__result, new object[] {});
+            Buttons curButtons = (Buttons)GetVirtualButtonMethod.Invoke(__result, new object[] {});
 
             // copy current button states
             Buttons newButtons = curButtons;
