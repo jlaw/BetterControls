@@ -89,7 +89,6 @@ namespace BetterControls
             Buttons origButtons = (Buttons)fieldinfo.GetValue(__result.Buttons);
 
             Buttons newButtons = origButtons;
-            Monitor.Log($"origButtons: {origButtons}",LogLevel.Debug);
 
             // this currently sets to = from is set, but it should actually be mirroring
             // to -> from and unsetting to (making sure not to trash any keys that have already been rebound)
@@ -108,7 +107,6 @@ namespace BetterControls
                         newKeys.Add(newKey);
                 }
             }
-            Monitor.Log($"newButtons: {newButtons}",LogLevel.Debug);
 
             curKeyboardState = new KeyboardState(newKeys.ToArray());
             
