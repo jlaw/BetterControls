@@ -104,7 +104,8 @@ namespace BetterControls
                 if (entry.Key.TryGetController(out oldButton) && entry.Value.TryGetKeyboard(out var newKey))
                 {
                     newButtons &= ((origButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
-                    newKeys.Add((origButtons & oldButton) == oldButton ? newKey : 0);
+                    if ((origButtons & oldButton) == oldButton)
+                        newKeys.Add(newKey);
                 }
             }
             Monitor.Log($"newButtons: {newButtons}",LogLevel.Debug);
