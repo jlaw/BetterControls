@@ -103,6 +103,12 @@ namespace BetterControls
                 }
             }
 
+            // update DPad states if they were remapped
+            var newDPadUp    = (newButtons & Buttons.DPadUp)    == Buttons.DPadUp    ? ButtonState.Pressed : ButtonState.Released;
+            var newDPadDown  = (newButtons & Buttons.DPadDown)  == Buttons.DPadDown  ? ButtonState.Pressed : ButtonState.Released;
+            var newDPadLeft  = (newButtons & Buttons.DPadLeft)  == Buttons.DPadLeft  ? ButtonState.Pressed : ButtonState.Released;
+            var newDPadRight = (newButtons & Buttons.DPadRight) == Buttons.DPadRight ? ButtonState.Pressed : ButtonState.Released;
+
             // save key mappings to be processed Keyboard_GetState_Postfix
             curKeyboardState = new KeyboardState(newKeys.ToArray());
 
@@ -110,7 +116,7 @@ namespace BetterControls
                 __result.ThumbSticks,
                 __result.Triggers,
                 new GamePadButtons(newButtons),
-                __result.DPad
+                new GamePadDPad(newDPadUp, newDPadDown, newDPadLeft, newDPadRight)
             );
             return curGamePadState;
         }
