@@ -81,29 +81,29 @@ namespace BetterControls
 
         public static GamePadState GamePad_GetState_Postfix(GamePadState __result)
         {
-            Buttons oldButton;
-            List<Keys> newKeys = new List<Keys>();
-            
-            // get the internal field `buttons`
-            FieldInfo fieldinfo = AccessTools.Field(typeof(GamePadButtons), "buttons");
-            Buttons origButtons = (Buttons)fieldinfo.GetValue(__result.Buttons);
+            // get a copy of current button states (Buttons, ThumbSticks, DPad)
+            MethodInfo virtualButtonMethod = AccessTools.Method(typeof(GamePadState), "GetVirtualButtons");
+            Buttons curButtons = (Buttons)virtualButtonMethod.Invoke(__result, new object[] {});
 
-            Buttons newButtons = origButtons;
+            // start new button and key states with no remaps
+            Buttons newButtons = curButtons;
+            List<Keys> newKeys = new List<Keys>();
 
             // this currently sets to = from is set, but it should actually be mirroring
             // to -> from and unsetting to (making sure not to trash any keys that have already been rebound)
             // ex: a -> b and b -> a
             foreach (var entry in map)
             {
+                Buttons fromButton;
                 if (entry.Key.TryGetController(out oldButton) && entry.Value.TryGetController(out var newButton))
                 {
-                    newButtons &= ((origButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
-                    newButtons |= ((origButtons & oldButton) == oldButton) ? newButton : 0;
+                    newButtons &= ((curButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
+                    newButtons |= ((curButtons & oldButton) == oldButton) ? newButton : 0;
                 }
                 if (entry.Key.TryGetController(out oldButton) && entry.Value.TryGetKeyboard(out var newKey))
                 {
-                    newButtons &= ((origButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
-                    if ((origButtons & oldButton) == oldButton)
+                    newButtons &= ((curButtons & oldButton) == oldButton) ? ~oldButton : newButtons;
+                    if ((curButtons & oldButton) == oldButton)
                         newKeys.Add(newKey);
                 }
             }
