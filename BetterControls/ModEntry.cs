@@ -1,4 +1,5 @@
-﻿using StardewModdingAPI;
+﻿using System;
+using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley.Menus;
 
@@ -9,54 +10,27 @@ namespace BetterControls
     {
         private readonly KeyMap _mapOverworld = new KeyMap
         {
-            {SButton.DPadUp,          SButton.B},               //     ChestAnywhere
-            {SButton.DPadLeft,        SButton.None},
-            {SButton.DPadDown,        SButton.Tab},             //     Shift Toolbar
-            {SButton.DPadRight,       SButton.K},               //     GeodeInfo
-            //{SButton.ControllerA,     SButton.ControllerX},   // Default: Check/Do Action
-            //{SButton.ControllerB,     SButton.ControllerB},   // Default: Inventory
-            //{SButton.ControllerX,     SButton.ControllerA},   // Default: Use Tool
-            //{SButton.ControllerY,     SButton.ControllerY},   // Default: Crafting
-            {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Left Tool (Default: Shift Toolbar)
-            {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Right Tool (Default: Shift Toolbar)
-            //{SButton.LeftTrigger,     SButton.LeftTrigger},   // Default: Select Left Tool
-            //{SButton.RightTrigger,    SButton.C},             //     Use Tool (Default: Select Right Tool)
-            //{SButton.ControllerBack,  SButton.ControllerBack},// Default: Journal
-            {SButton.ControllerStart, SButton.N},               //     Pause/TimeSpeed (Default: Menu)
-            {SButton.LeftStick,       SButton.M},               //     Map (Default: nothing)
-            {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
-        };
 
+        };
+            
         // keymap for main menu
         private readonly KeyMap _mapGameMenu = new KeyMap
         {
-            {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
-            {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab
-            {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
+
         };
 
         // keymap for chests
         private readonly KeyMap _mapItemGrabMenu = new KeyMap
         {
-            {SButton.LeftTrigger,    SButton.LeftShoulder},     //     ChestAnywhere: Select Previous Tab
-            {SButton.RightTrigger,   SButton.RightShoulder},    //     ChestAnywhere: Select Next Tab
-            {SButton.ControllerY,     SButton.Q},               //     OrganizeShortcut: StackToChest
-            {SButton.RightStick,      SButton.F1},              //     LookupAnything (Default: chat/emoji)
+
         };
         
         // keymap for title menu
         private readonly KeyMap _mapTitleMenu = new KeyMap
         {
-            {SButton.LeftShoulder,    SButton.LeftTrigger},     //     Select Previous Tab
-            {SButton.RightShoulder,   SButton.RightTrigger},    //     Select Next Tab
-            {SButton.W,               SButton.DPadUp},          //     Up
-            {SButton.S,               SButton.DPadDown},        //     Down
-            {SButton.A,               SButton.DPadLeft},        //     Left
-            {SButton.D,               SButton.DPadRight},       //     Right
-            {SButton.Space,           SButton.ControllerA},     //     Select
-            {SButton.Enter,           SButton.ControllerA},     //     Select
-        };
 
+        };
+        private ModConfig Config;
 
         /*********
         ** Public methods
@@ -71,7 +45,9 @@ namespace BetterControls
                 return;
             }
 
-            InputPatch.SetMap(_mapTitleMenu);
+            Config = Helper.ReadConfig<ModConfig>();
+
+            InputPatch.SetMap(Config.KeyMaps.TitleMenu);
             helper.Events.Display.MenuChanged += this.OnEnterMenu;
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
             helper.Events.Input.ButtonReleased += this.OnButtonReleased;
@@ -87,16 +63,16 @@ namespace BetterControls
             switch (e.NewMenu)
             {
                 case null:
-                    InputPatch.SetMap(_mapOverworld);
+                    InputPatch.SetMap(Config.KeyMaps.GameMenu);
                     break;
                 case GameMenu _:
-                    InputPatch.SetMap(_mapGameMenu);
+                    InputPatch.SetMap(Config.KeyMaps.GameMenu);
                     break;
                 case ItemGrabMenu _:
-                    InputPatch.SetMap(_mapItemGrabMenu);
+                    InputPatch.SetMap(Config.KeyMaps.ItemGrabMenu);
                     break;
                 case TitleMenu _:
-                    InputPatch.SetMap(_mapTitleMenu);
+                    InputPatch.SetMap(Config.KeyMaps.TitleMenu);
                     break;
                 default:
                     InputPatch.SetMap(new KeyMap());

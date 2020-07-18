@@ -199,6 +199,4 @@ namespace BetterControls
             return _prevGamePadState;
         }
     }
-
-    public class KeyMap : Dictionary<SButton, SButton> { }
 }
