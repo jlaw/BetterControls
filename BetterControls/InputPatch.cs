@@ -23,8 +23,6 @@ namespace BetterControls
         public static bool Initialize(string id, IMonitor monitor)
         {
             Monitor = monitor;
-            _pendingButtonState = new GamePadState();
-            _pendingKeyState = new KeyboardState();
             var harmony = HarmonyInstance.Create(id);
 
             var keyboardGetStateMethod = AccessTools.Method(typeof(Keyboard), nameof(Keyboard.GetState));
@@ -72,7 +70,7 @@ namespace BetterControls
             // process pending keys
             if (_pendingKeyState.GetPressedKeys().Any())
             {
-                Monitor.Log($"Pending keys exist {_pendingKeyState.GetPressedKeys()}", LogLevel.Debug);
+                Monitor.Log($"Pending Keys: {_pendingKeyState.GetPressedKeys()}", LogLevel.Debug);
                 _prevKeyboardState = _pendingKeyState;
                 _pendingKeyState = new KeyboardState();
                 return _prevKeyboardState;
@@ -140,7 +138,7 @@ namespace BetterControls
             Buttons pendingButtons = (Buttons)GetVirtualButtonMethod.Invoke(_pendingButtonState, new object[] {});
             if (pendingButtons != 0)
             {
-                Monitor.Log($"Pending buttons exist {_pendingButtonState.Buttons}", LogLevel.Debug);
+                Monitor.Log($"Pending Buttons: {pendingButtons}", LogLevel.Debug);
                 _prevGamePadState = _pendingButtonState;
                 _pendingButtonState = new GamePadState();
                 return _prevGamePadState;
@@ -179,7 +177,9 @@ namespace BetterControls
                         newKeys.Add(newKey);
                 }
             }
-            Monitor.Log($"{curButtons} -> {newButtons}", LogLevel.Debug);
+            
+            if (__result.IsConnected)
+                Monitor.Log($"{curButtons} -> {newButtons}", LogLevel.Debug);
             
             // update DPad states if they were remapped
             var newDPadUp    = (newButtons & Buttons.DPadUp)    == Buttons.DPadUp    ? ButtonState.Pressed : ButtonState.Released;
