@@ -63,9 +63,11 @@ namespace BetterControls
             switch (e.NewMenu)
             {
                 case null:
+                case BobberBar _:
                     InputPatch.SetMap(Config.KeyMaps.GameMenu);
                     break;
                 case GameMenu _:
+                case JunimoNoteMenu _:
                     InputPatch.SetMap(Config.KeyMaps.GameMenu);
                     break;
                 case ItemGrabMenu _:
