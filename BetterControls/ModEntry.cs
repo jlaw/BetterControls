@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley.Menus;
@@ -8,29 +9,10 @@ namespace BetterControls
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
-        private readonly KeyMap _mapOverworld = new KeyMap
-        {
+        private Keymap globalKeymap = new Keymap();
+        private Dictionary<string, Keymap> allKeymaps = new Dictionary<string, Keymap>();
+        private ModConfig _config;
 
-        };
-            
-        // keymap for main menu
-        private readonly KeyMap _mapGameMenu = new KeyMap
-        {
-
-        };
-
-        // keymap for chests
-        private readonly KeyMap _mapItemGrabMenu = new KeyMap
-        {
-
-        };
-        
-        // keymap for title menu
-        private readonly KeyMap _mapTitleMenu = new KeyMap
-        {
-
-        };
-        private ModConfig Config;
 
         /*********
         ** Public methods
@@ -39,18 +21,57 @@ namespace BetterControls
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
-            // Try to initialize the input patcher
-            if (!InputPatch.Initialize(this.ModManifest.UniqueID, Monitor))
+            try
             {
+                _config = helper.ReadConfig<ModConfig>();
+                if (_config.Keymaps != null)
+                {
+                    foreach (var keymapGroup in _config.Keymaps)
+                    {
+                        if (keymapGroup.Key == "Global")
+                        {
+                            foreach (var keymap in keymapGroup.Value)
+                            {
+                                if (Enum.TryParse(keymap.Key, out SButton from) &&
+                                    Enum.TryParse(keymap.Value, out SButton to))
+                                    globalKeymap.Add(from, to);
+                            }
+                        }
+                        else
+                        {
+                            Keymap temp = new Keymap();
+                            foreach (var keymap in keymapGroup.Value)
+                            {
+                                if (Enum.TryParse(keymap.Key, out SButton from) &&
+                                    Enum.TryParse(keymap.Value, out SButton to))
+                                    temp.Add(from, to);
+                            }
+
+                            allKeymaps.Add(keymapGroup.Key, temp);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Monitor.Log($"Error: {e}", LogLevel.Error);
+            }
+            
+            // Try to initialize the input patcher
+            try
+            {
+                InputPatch.Initialize(ModManifest.UniqueID, Monitor, globalKeymap);
+            }
+            catch (Exception e)
+            {
+                Monitor.Log($"Error: {e}", LogLevel.Error);
                 return;
             }
 
-            Config = Helper.ReadConfig<ModConfig>();
-
-            InputPatch.SetMap(Config.KeyMaps.TitleMenu);
-            helper.Events.Display.MenuChanged += this.OnEnterMenu;
-            helper.Events.Input.ButtonPressed += this.OnButtonPressed;
-            helper.Events.Input.ButtonReleased += this.OnButtonReleased;
+            InputPatch.SetMap(allKeymaps["TitleMenu"]);
+            helper.Events.Display.MenuChanged += OnEnterMenu;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
+            helper.Events.Input.ButtonReleased += OnButtonReleased;
         }
 
         /// <summary>Raised after the player opens a menu.</summary>
@@ -63,21 +84,18 @@ namespace BetterControls
             switch (e.NewMenu)
             {
                 case null:
-                case BobberBar _:
-                    InputPatch.SetMap(Config.KeyMaps.GameMenu);
+                case BobberBar _: // Fishing
+                    InputPatch.SetMap(allKeymaps["Overworld"]);
                     break;
                 case GameMenu _:
-                case JunimoNoteMenu _:
-                    InputPatch.SetMap(Config.KeyMaps.GameMenu);
+                case JunimoNoteMenu _: // Community Center Menu
+                    InputPatch.SetMap(allKeymaps["GameMenu"]);
                     break;
                 case ItemGrabMenu _:
-                    InputPatch.SetMap(Config.KeyMaps.ItemGrabMenu);
+                    InputPatch.SetMap(allKeymaps["ItemGrabMenu"]);
                     break;
                 case TitleMenu _:
-                    InputPatch.SetMap(Config.KeyMaps.TitleMenu);
-                    break;
-                default:
-                    InputPatch.SetMap(new KeyMap());
+                    InputPatch.SetMap(allKeymaps["TitleMenu"]);
                     break;
             }
         }

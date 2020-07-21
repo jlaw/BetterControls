@@ -1,72 +1,77 @@
-﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using StardewModdingAPI;
 
 namespace BetterControls
 {
-    public class KeyMapConverter : JsonConverter
+    public class ModConfig
     {
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public Dictionary<string, KeymapString> Keymaps { get; set; }
+
+        public ModConfig()
         {
-            KeyMap keymap = (KeyMap)value;
-
-            writer.WriteStartObject();
-            foreach(var entry in keymap)
+            Keymaps = new Dictionary<string, KeymapString>
             {
-                writer.WritePropertyName(entry.Key.ToString());
-                writer.WriteValue(entry.Value.ToString());
-            }
-            writer.WriteEndObject();
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            KeyMap keymap = new KeyMap();
-            Type type = typeof(SButton);
-
-            try
-            {
-                JObject jObject = JObject.Load(reader);
-                foreach (KeyValuePair<string, JToken> entry in jObject)
                 {
-                    SButton from = (SButton)type.GetField(entry.Key).GetRawConstantValue();
-                    SButton to = SButton.None;
-                    if (entry.Value != null && entry.Value.Type != JTokenType.Null)
+                    "Global", new KeymapString
                     {
-                        to = (SButton)type.GetField(entry.Value.ToString()).GetRawConstantValue();
+                        {"Up", "DPadUp"}, //     Up
+                        {"Down", "DPadDown"}, //     Down
+                        {"Left", "DPadLeft"}, //     Left
+                        {"Right", "DPadRight"}, //     Right
+                        {"Space", "ControllerA"}, //     Select
+                        {"Enter", "ControllerA"}, //     Select
+                        {SButton.PageUp.ToString(), "LeftTrigger"}, //     Select Previous Tab/Left Tool
+                        {SButton.PageDown.ToString(), "RightTrigger"}, //     Select Next Tab/Right Tool
+                        {"LeftShoulder", "LeftTrigger"}, //     Select Previous Tab/Left Tool
+                        {"RightShoulder", "RightTrigger"}, //     Select Next Tab/Right Tool
+                        {"LeftStick", "M"}, //     Map (Default: nothing)
+                        {"RightStick", "F1"}, //     LookupAnything (Default: chat/emoji)
                     }
-                    keymap[from] = to;
+                },
+                {
+                    "Overworld", new KeymapString
+                    {
+                        {"DPadUp", "B"}, //     ChestAnywhere
+                        {"DPadLeft", "None"},
+                        {"DPadDown", "Tab"}, //     Shift Toolbar
+                        {"DPadRight", "K"}, //     GeodeInfo
+                        //{"ControllerA",     "ControllerA"},   // Default: Check/Do Action
+                        //{"ControllerB",     "ControllerB"},   // Default: Inventory
+                        //{"ControllerX",     "ControllerX"},   // Default: Use Tool
+                        //{"ControllerY",     "ControllerY"},   // Default: Crafting
+                        //{"LeftTrigger",     "LeftTrigger"},   // Default: Select Left Tool
+                        {"RightTrigger", "ControllerX"}, //     Use Tool (Default: Select Right Tool)
+                        //{"ControllerBack",  "ControllerBack"},// Default: Journal
+                        {"ControllerStart", "N"}, //     Pause/TimeSpeed (Default: Menu)
+                    }
+                },
+                {
+                    "GameMenu", new KeymapString
+                    {
+                    }
+                },
+                {
+                    "ItemGrabMenu", new KeymapString
+                    {
+                        {"LeftTrigger", "LeftShoulder"}, //     ChestAnywhere: Select Previous Tab
+                        {"RightTrigger", "RightShoulder"}, //     ChestAnywhere: Select Next Tab
+                        {"ControllerY", "Q"}, //     OrganizeShortcut: StackToChest
+                    }
+                },
+                {
+                    "TitleMenu", new KeymapString
+                    {
+                    }
                 }
-            }
-            catch(JsonReaderException)
-            {
-                reader.Skip();
-            }
-
-            return keymap;
-        }
-
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(KeyMap);
+            };
         }
     }
 
-    [JsonConverter(typeof(KeyMapConverter))]
-    public class KeyMap : Dictionary<SButton, SButton> { }
-
-    public class KeyMaps
+    public class Keymap : Dictionary<SButton, SButton>
     {
-        public KeyMap OverWorld { get; set; } = new KeyMap();
-        public KeyMap GameMenu { get; set; } = new KeyMap();
-        public KeyMap ItemGrabMenu { get; set; } = new KeyMap();
-        public KeyMap TitleMenu { get; set; } = new KeyMap();
     }
 
-    class ModConfig
+    public class KeymapString : Dictionary<string, string>
     {
-        public KeyMaps KeyMaps { get; set; } = new KeyMaps();
     }
 }

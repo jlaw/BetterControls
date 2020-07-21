@@ -10,8 +10,9 @@ namespace BetterControls
 {
     public class InputPatch
     {
-        private static IMonitor Monitor;
-        private static KeyMap _map;
+        private static IMonitor _monitor;
+        private static Keymap _globalMap;
+        private static Keymap _map;
         private static KeyboardState _prevKeyboardState;
         private static GamePadState _prevGamePadState;
         private static KeyboardState _pendingKeyState;
@@ -20,9 +21,10 @@ namespace BetterControls
         private static readonly MethodInfo GetVirtualButtonMethod = AccessTools.Method(typeof(GamePadState), "GetVirtualButtons");
 
         // call this method from your Entry class
-        public static bool Initialize(string id, IMonitor monitor)
+        public static bool Initialize(string id, IMonitor monitor, Keymap globalMap)
         {
-            Monitor = monitor;
+            _monitor = monitor;
+            _globalMap = globalMap;
             var harmony = HarmonyInstance.Create(id);
 
             var keyboardGetStateMethod = AccessTools.Method(typeof(Keyboard), nameof(Keyboard.GetState));
@@ -39,7 +41,7 @@ namespace BetterControls
                 }
                 foreach (var patch in info.Postfixes)
                 {
-                    Monitor.Log($"{info} is already patched by {patch.owner}");
+                    _monitor.Log($"{info} is already patched by {patch.owner}");
                     return false;
                 }
             }
@@ -60,9 +62,13 @@ namespace BetterControls
             return true;
         }
 
-        public static void SetMap(KeyMap map)
+        public static void SetMap(Keymap map)
         {
-            InputPatch._map = map;
+            _map = _globalMap;
+            foreach (var binding in map)
+            {
+                _map[binding.Key] = binding.Value;
+            }
         }
 
         public static KeyboardState Keyboard_GetState_Postfix(KeyboardState __result)
@@ -70,7 +76,7 @@ namespace BetterControls
             // process pending keys
             if (_pendingKeyState.GetPressedKeys().Any())
             {
-                Monitor.Log($"Pending Keys: {_pendingKeyState.GetPressedKeys()}", LogLevel.Debug);
+                _monitor.Log($"Pending Keys: {_pendingKeyState.GetPressedKeys()}", LogLevel.Debug);
                 _prevKeyboardState = _pendingKeyState;
                 _pendingKeyState = new KeyboardState();
                 return _prevKeyboardState;
@@ -105,7 +111,7 @@ namespace BetterControls
                         else if (entry.Value.TryGetController(out var toButton))
                             newButtons |= toButton;
                         else
-                            Monitor.Log($"No such key: {entry.Value}");
+                            _monitor.Log($"No such key: {entry.Value}");
                         break;
                     }
                 }
@@ -138,7 +144,7 @@ namespace BetterControls
             Buttons pendingButtons = (Buttons)GetVirtualButtonMethod.Invoke(_pendingButtonState, new object[] {});
             if (pendingButtons != 0)
             {
-                Monitor.Log($"Pending Buttons: {pendingButtons}", LogLevel.Debug);
+                _monitor.Log($"Pending Buttons: {pendingButtons}", LogLevel.Debug);
                 _prevGamePadState = _pendingButtonState;
                 _pendingButtonState = new GamePadState();
                 return _prevGamePadState;
@@ -179,7 +185,7 @@ namespace BetterControls
             }
             
             if (__result.IsConnected)
-                Monitor.Log($"{curButtons} -> {newButtons}", LogLevel.Debug);
+                _monitor.Log($"{curButtons} -> {newButtons}", LogLevel.Debug);
             
             // update DPad states if they were remapped
             var newDPadUp    = (newButtons & Buttons.DPadUp)    == Buttons.DPadUp    ? ButtonState.Pressed : ButtonState.Released;
