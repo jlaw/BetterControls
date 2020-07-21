@@ -9,8 +9,7 @@ namespace BetterControls
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
-        private Keymap globalKeymap = new Keymap();
-        private Dictionary<string, Keymap> allKeymaps = new Dictionary<string, Keymap>();
+        private readonly Dictionary<string, Keymap> _keymaps = new Dictionary<string, Keymap>();
         private ModConfig _config;
 
 
@@ -21,34 +20,29 @@ namespace BetterControls
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
+            // try reading config.json
             try
             {
                 _config = helper.ReadConfig<ModConfig>();
                 if (_config.Keymaps != null)
                 {
+                    // iterate through each keymap group
                     foreach (var keymapGroup in _config.Keymaps)
                     {
-                        if (keymapGroup.Key == "Global")
+                        Keymap newKeymap = new Keymap();
+                        
+                        // convert strings to SButtons
+                        foreach (var keymap in keymapGroup.Value)
                         {
-                            foreach (var keymap in keymapGroup.Value)
+                            if (Enum.TryParse(keymap.Key, out SButton from) &&
+                                Enum.TryParse(keymap.Value, out SButton to))
                             {
-                                if (Enum.TryParse(keymap.Key, out SButton from) &&
-                                    Enum.TryParse(keymap.Value, out SButton to))
-                                    globalKeymap.Add(from, to);
+                                newKeymap.Add(from, to);
                             }
                         }
-                        else
-                        {
-                            Keymap temp = new Keymap();
-                            foreach (var keymap in keymapGroup.Value)
-                            {
-                                if (Enum.TryParse(keymap.Key, out SButton from) &&
-                                    Enum.TryParse(keymap.Value, out SButton to))
-                                    temp.Add(from, to);
-                            }
 
-                            allKeymaps.Add(keymapGroup.Key, temp);
-                        }
+                        // put it all together
+                        _keymaps.Add(keymapGroup.Key, newKeymap);
                     }
                 }
             }
@@ -56,19 +50,19 @@ namespace BetterControls
             {
                 Monitor.Log($"Error: {e}", LogLevel.Error);
             }
-            
-            // Try to initialize the input patcher
+
+            // try to initialize the input patcher
             try
             {
-                InputPatch.Initialize(ModManifest.UniqueID, Monitor, globalKeymap);
+                InputPatch.Initialize(ModManifest.UniqueID, Monitor, _keymaps["Global"]);
             }
             catch (Exception e)
             {
                 Monitor.Log($"Error: {e}", LogLevel.Error);
-                return;
             }
 
-            InputPatch.SetMap(allKeymaps["TitleMenu"]);
+            // set default keymap to TitleMenu, since that is the first screen
+            InputPatch.SetMap(_keymaps["TitleMenu"]);
             helper.Events.Display.MenuChanged += OnEnterMenu;
             helper.Events.Input.ButtonPressed += OnButtonPressed;
             helper.Events.Input.ButtonReleased += OnButtonReleased;
@@ -85,17 +79,17 @@ namespace BetterControls
             {
                 case null:
                 case BobberBar _: // Fishing
-                    InputPatch.SetMap(allKeymaps["Overworld"]);
+                    InputPatch.SetMap(_keymaps["Overworld"]);
                     break;
                 case GameMenu _:
                 case JunimoNoteMenu _: // Community Center Menu
-                    InputPatch.SetMap(allKeymaps["GameMenu"]);
+                    InputPatch.SetMap(_keymaps["GameMenu"]);
                     break;
                 case ItemGrabMenu _:
-                    InputPatch.SetMap(allKeymaps["ItemGrabMenu"]);
+                    InputPatch.SetMap(_keymaps["ItemGrabMenu"]);
                     break;
                 case TitleMenu _:
-                    InputPatch.SetMap(allKeymaps["TitleMenu"]);
+                    InputPatch.SetMap(_keymaps["TitleMenu"]);
                     break;
             }
         }
@@ -104,7 +98,7 @@ namespace BetterControls
         {
             Monitor.Log($"Button Pressed: {e.Button}", LogLevel.Debug);
         }
-        
+
         private void OnButtonReleased(object sender, ButtonReleasedEventArgs e)
         {
             Monitor.Log($"Button Released: {e.Button}", LogLevel.Debug);
