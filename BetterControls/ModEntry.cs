@@ -9,9 +9,8 @@ namespace BetterControls
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
-        private readonly Dictionary<string, Keymap> _keymaps = new Dictionary<string, Keymap>();
+        private readonly Dictionary<string, InternalKeymap> _keymaps = new Dictionary<string, InternalKeymap>();
         private ModConfig _config;
-
 
         /*********
         ** Public methods
@@ -20,30 +19,13 @@ namespace BetterControls
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
-            // try reading config.json
+            // Try reading config.json
             try
             {
                 _config = helper.ReadConfig<ModConfig>();
-                if (_config.Keymaps != null)
+                foreach (var entry in _config.Keymaps)
                 {
-                    // iterate through each keymap group
-                    foreach (var keymapGroup in _config.Keymaps)
-                    {
-                        Keymap newKeymap = new Keymap();
-                        
-                        // convert strings to SButtons
-                        foreach (var keymap in keymapGroup.Value)
-                        {
-                            if (Enum.TryParse(keymap.Key, out SButton from) &&
-                                Enum.TryParse(keymap.Value, out SButton to))
-                            {
-                                newKeymap.Add(from, to);
-                            }
-                        }
-
-                        // put it all together
-                        _keymaps.Add(keymapGroup.Key, newKeymap);
-                    }
+                    _keymaps[entry.Key] = InputPatch.ParseKeymap(entry.Value);
                 }
             }
             catch (Exception e)
@@ -51,7 +33,7 @@ namespace BetterControls
                 Monitor.Log($"Error: {e}", LogLevel.Error);
             }
 
-            // try to initialize the input patcher
+            // Try to initialize the input patcher
             try
             {
                 InputPatch.Initialize(ModManifest.UniqueID, Monitor, _keymaps["Global"]);
@@ -61,7 +43,7 @@ namespace BetterControls
                 Monitor.Log($"Error: {e}", LogLevel.Error);
             }
 
-            // set default keymap to TitleMenu, since that is the first screen
+            // Set default keymap to TitleMenu, since that is the first screen
             InputPatch.SetMap(_keymaps["TitleMenu"]);
             helper.Events.Display.MenuChanged += OnEnterMenu;
             helper.Events.Input.ButtonPressed += OnButtonPressed;
