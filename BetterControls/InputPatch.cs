@@ -180,23 +180,6 @@ namespace BetterControls
             InternalKeymap[] maps = { _map, _globalMap };
             foreach (var map in maps)
             {
-                // Map keyboard -> *
-                foreach (var key in keyboardState.GetPressedKeys())
-                {
-                    if (map.KeyToKeyMap.ContainsKey(key))
-                    {
-                        newKeys.Add(_map.KeyToKeyMap[key]);
-                    }
-                    else if (map.KeyToButtonMap.ContainsKey(key))
-                    {
-                        newButtons |= map.KeyToButtonMap[key];
-                    }
-                    else
-                    {
-                        newKeys.Add(key);
-                    }
-                }
-
                 // Map button -> *
                 foreach (var entry in map.ButtonToKeyMap)
                 {
@@ -214,6 +197,24 @@ namespace BetterControls
                         newButtons |= entry.Value;
                     }
                 }
+
+                // Map keyboard -> *
+                foreach (var key in keyboardState.GetPressedKeys())
+                {
+                    if (map.KeyToKeyMap.ContainsKey(key))
+                    {
+                        newKeys.Add(_map.KeyToKeyMap[key]);
+                    }
+                    else if (map.KeyToButtonMap.ContainsKey(key))
+                    {
+                        newButtons |= map.KeyToButtonMap[key];
+                    }
+                    else
+                    {
+                        newKeys.Add(key);
+                    }
+                }
+
             }
 
             // update DPad states if they were remapped
